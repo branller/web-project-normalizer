@@ -5,7 +5,7 @@ from textwrap import fill
 
 def _axis_label(name: str) -> str:
     return {"stack": "Stack", "structure": "Estructura", "components": "Componentes",
-            "design": "Tokens CSS"}.get(name, name)
+            "design": "Tokens CSS", "Diseño visual": "Diseño visual"}.get(name, name)
 
 
 def _print_task(task: dict, indent: str = "  ") -> None:
@@ -22,11 +22,11 @@ def print_json(data: dict) -> None:
 
 
 def print_normalization_plan(alignment: dict, tasks: list[dict], file_changes: list) -> None:
-    print("\nDIAGNÓSTICO DE ALINEACIÓN")
+    print("\nDIAGNÓSTICO ACTUAL · antes de aplicar cambios")
     if alignment.get("score") is None:
         print("  Porcentaje: no calculable; el template no contiene criterios comparables.")
     else:
-        print(f"  Alineación: {alignment['score']}% ({alignment['passed']}/{alignment['total']} criterios)")
+        print(f"  Alineación: {alignment['score']}% (promedio simple de {alignment['axes_scored']} ejes)")
     if alignment.get("template_package"):
         print(f"  Paquete comparado: {alignment['template_package']} → "
               f"{alignment.get('matched_project_package') or 'sin equivalente detectado'}")
@@ -37,7 +37,7 @@ def print_normalization_plan(alignment: dict, tasks: list[dict], file_changes: l
             print(f"  {label}: {axis['score']}% ({axis['passed']}/{axis['total']})")
 
     if alignment.get("score") is not None:
-        print("  Puntaje: coincidencias exactas de dependencias/versiones, rutas, componentes y tokens.")
+        print("  Cada eje pesa lo mismo; compara versiones, rutas/archivos y nombres de variables CSS, no apariencia visual.")
 
     print("\nCAMBIOS PROPUESTOS")
     if tasks:
@@ -68,7 +68,7 @@ def print_scan(data: dict) -> None:
     if audit.get("score") is None:
         print("    No calculable: falta configurar criterios de referencia.")
     else:
-        print(f"    Coincidencia general: {audit['score']}% ({audit['passed']}/{audit['total']} criterios)")
+        print(f"    Coincidencia general: {audit['score']}% (promedio simple de {audit['axes_scored']} ejes)")
     if audit.get("template_package"):
         print(f"    Base: {audit['template_package']} → {audit.get('matched_project_package') or 'sin paquete equivalente'}")
     for name, axis in audit.get("axes", {}).items():

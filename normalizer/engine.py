@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 
 from .backup import backup_file, create_backup_root
+from .css_theme import merge_theme_blocks, source_theme
 from .models import PlannedChange
 
 
@@ -54,6 +55,11 @@ def apply_plan(
                     f"\\n\\n{marker}\\n{source_text.rstrip()}\\n{end_marker}\\n"
                 )
                 item.target.write_text(original.rstrip() + payload, encoding="utf-8")
+            elif item.mode == "merge_theme" and item.target.exists():
+                original = item.target.read_text(encoding="utf-8")
+                item.target.write_text(
+                    merge_theme_blocks(original, source_theme(item.source)), encoding="utf-8"
+                )
             else:
                 shutil.copy2(item.source, item.target)
 

@@ -4,6 +4,7 @@ import re
 
 from .models import PlannedChange
 from .scanner import _walk_files
+from .css_theme import THEME_MARKER, source_theme
 
 
 def _examples(values: list[str], limit: int = 5) -> str:
@@ -89,7 +90,51 @@ def build_safe_component_plan(template: Path, target: Path, alignment: dict) -> 
     return plan
 
 
-def build_recommendations(alignment: dict, automatic_components: set[str] | None = None) -> list[dict]:
+def build_theme_plan(template: Path, target: Path, alignment: dict) -> list[PlannedChange]:
+    """Merge template design tokens into an existing Tailwind v4 global stylesheet."""
+    target_package_path = alignment.get("matched_project_package_path")
+    if not target_package_path:
+        return []
+    target_root = target if target_package_path == "." else target / target_package_path
+    package_file = target_root / "package.json"
+    try:
+        package = json.loads(package_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    dependencies = {}
+    for section in ("dependencies", "devDependencies"):
+        values = package.get(section, {})
+        if isinstance(values, dict):
+            dependencies.update(values)
+    tailwind_version = str(dependencies.get("tailwindcss", ""))
+    if not tailwind_version.startswith(("^4", "~4", "4")):
+        return []
+
+    source_candidates = [template / "src" / "app" / "globals.css"]
+    source = next((path for path in source_candidates if path.is_file()), None)
+    if source is None or not source_theme(source):
+        return []
+    preferred = [target_root / "src" / "index.css", target_root / "src" / "globals.css",
+                 target_root / "src" / "app" / "globals.css"]
+    destination = next((path for path in preferred if path.is_file()), None)
+    if destination is None:
+        destination = next((path for path in _walk_files(target_root)
+                            if path.suffix.lower() == ".css" and path.name.lower() in {"index.css", "globals.css", "global.css"}), None)
+    if destination is None or THEME_MARKER in destination.read_text(encoding="utf-8", errors="replace"):
+        return []
+    if "@import\"tailwindcss\"" not in destination.read_text(encoding="utf-8").replace(" ", ""):
+        return []
+    return [PlannedChange(
+        source=source,
+        target=destination,
+        mode="merge_theme",
+        action="append",
+        reason="Se integrarán los tokens del template después de los imports Tailwind; se conserva el CSS existente.",
+    )]
+
+
+def build_recommendations(alignment: dict, automatic_components: set[str] | None = None,
+                          automatic_axes: set[str] | None = None) -> list[dict]:
     """Turn audit findings into concrete, reviewable migration tasks."""
     axes = alignment.get("axes", {})
     tasks = []
@@ -131,6 +176,7 @@ def build_recommendations(alignment: dict, automatic_components: set[str] | None
         })
 
     automatic_components = automatic_components or set()
+    automatic_axes = automatic_axes or set()
     components = [item["criterion"] for item in axes.get("components", {}).get("items", [])
                   if item.get("status") != "ok" and item["criterion"] not in automatic_components]
     if components:
@@ -145,7 +191,15 @@ def build_recommendations(alignment: dict, automatic_components: set[str] | None
 
     tokens = [item["criterion"] for item in axes.get("design", {}).get("items", [])
               if item.get("status") != "ok"]
-    if tokens:
+    if tokens and "design" in automatic_axes:
+        tasks.append({
+            "axis": "Diseño visual",
+            "automatic": False,
+            "classification": "REVISAR",
+            "message": "Se integrarán los tokens del template, pero las clases y estilos propios del frontend no se reemplazan.",
+            "details": ["La apariencia puede requerir una adaptación visual posterior."],
+        })
+    elif tokens:
         shown = ", ".join(f"--{name}" for name in tokens[:12])
         if len(tokens) > 12:
             shown += f" y {len(tokens) - 12} más"

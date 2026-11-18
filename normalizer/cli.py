@@ -9,7 +9,7 @@ from .engine import apply_plan, ApplyError
 from .paths import validate_target, PathSafetyError
 from .planner import build_plan
 from .reporter import print_json, print_scan, print_normalization_plan, write_report
-from .reconciler import build_recommendations, build_safe_component_plan
+from .reconciler import build_recommendations, build_safe_component_plan, build_theme_plan
 from .scanner import scan_project
 from .template_sync import DEFAULT_TEMPLATE_REPO, TemplateSyncError, sync_template
 from .validator import validate_project
@@ -74,8 +74,12 @@ def main() -> int:
             result = scan_project(target)
             result["alignment"] = evaluate_alignment(target, template)
             safe_changes = build_safe_component_plan(template, target, result["alignment"])
+            safe_changes.extend(build_theme_plan(template, target, result["alignment"]))
             automatic_components = {item.source.relative_to(template).as_posix() for item in safe_changes}
-            result["normalization_tasks"] = build_recommendations(result["alignment"], automatic_components)
+            automatic_axes = {"design"} if any(item.mode == "merge_theme" for item in safe_changes) else set()
+            result["normalization_tasks"] = build_recommendations(
+                result["alignment"], automatic_components, automatic_axes
+            )
             result["safe_file_changes"] = [
                 {"source": str(item.source), "target": str(item.target), "action": item.action,
                  "reason": item.reason} for item in safe_changes
@@ -105,10 +109,14 @@ def main() -> int:
         plan = build_plan(template, target, rules)
         alignment = evaluate_alignment(target, template)
         safe_changes = build_safe_component_plan(template, target, alignment)
+        safe_changes.extend(build_theme_plan(template, target, alignment))
         planned_targets = {item.target for item in plan}
         plan.extend(item for item in safe_changes if item.target not in planned_targets)
-        automatic_components = {item.source.relative_to(template).as_posix() for item in safe_changes}
-        recommendations = build_recommendations(alignment, automatic_components)
+        actual_safe_changes = [item for item in plan if item in safe_changes]
+        automatic_components = {item.source.relative_to(template).as_posix() for item in actual_safe_changes
+                                if "components" in {part.lower() for part in item.source.parts}}
+        automatic_axes = {"design"} if any(item.mode == "merge_theme" for item in actual_safe_changes) else set()
+        recommendations = build_recommendations(alignment, automatic_components, automatic_axes)
         print(f"\nPLAN DE NORMALIZACIÓN · {target}")
         print(f"Template: {template}")
         print_normalization_plan(alignment, recommendations, plan)

@@ -159,15 +159,16 @@ def evaluate_alignment(target: Path, template: Path, profile_path: Path = PROFIL
     configured_axes = [axis for axis in axes.values() if axis["configured"]]
     total_checks = sum(axis["total"] for axis in configured_axes)
     passed_checks = sum(axis["passed"] for axis in configured_axes)
-    score = round(100 * passed_checks / total_checks) if total_checks else None
+    score = round(sum(axis["score"] for axis in configured_axes) / len(configured_axes)) if configured_axes else None
     recommendations = [item["message"] for axis in axes.values() for item in axis["items"]
                        if item["status"] != "ok"]
     if not reference_packages:
         recommendations.insert(0, "El template actualizado no contiene package.json; no se pudo auditar el stack.")
     if not total_checks:
         recommendations.append("No se encontraron criterios comparables en el template actualizado.")
-    return {"configured": bool(total_checks), "score": score, "passed": passed_checks,
-            "total": total_checks, "axes": axes, "recommendations": recommendations,
+    return {"configured": bool(total_checks), "score": score,
+            "axes_scored": len(configured_axes), "criteria_passed": passed_checks,
+            "criteria_total": total_checks, "axes": axes, "recommendations": recommendations,
             "template_package": primary_reference["name"] if primary_reference else None,
             "matched_project_package": primary_target["name"] if primary_target else None,
             "matched_project_package_path": (primary_target["root"].relative_to(target).as_posix()

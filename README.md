@@ -59,14 +59,16 @@ El scan compara automáticamente con el clon actualizado: dependencias y version
 porcentaje por eje y recomienda cada dependencia, ruta, componente o token que falta o
 difiere. [alignment.toml](alignment.toml) permite añadir criterios propios; no es necesario
 duplicar ahí el stack ni los componentes que ya existen en el template.
+El porcentaje general es el promedio simple de los ejes configurados, para que una lista
+larga de tokens no pese más que la estructura o el stack.
 
 `scan` y `plan` agrupan las diferencias en tareas concretas. Los cambios grandes de stack,
 estructura o componentes se etiquetan `NOTIFICAR`; el cambio de tokens de diseño queda como
-`REVISAR`. `apply` ejecuta únicamente las operaciones de archivo declaradas en
-`normalizer.toml` y puede crear componentes del template cuando sus imports ya son
-compatibles con el paquete objetivo. Las copias usan `create_only`, backup y confirmación.
-Migraciones de framework, dependencias faltantes y adaptaciones incompatibles se notifican
-para revisión; nunca reemplaza código propio implícitamente.
+`REVISAR`. `apply` ejecuta las reglas declaradas en `normalizer.toml`, puede integrar
+tokens CSS del template en una hoja global existente con Tailwind 4 y crear componentes
+solo cuando sus imports son compatibles. Cada cambio crea backup y requiere confirmación.
+Migraciones de framework, dependencias faltantes y adaptaciones incompatibles se notifican;
+nunca reemplaza código propio implícitamente.
 
 También se pueden especificar las rutas:
 
