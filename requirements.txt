@@ -1,0 +1,2 @@
+# Core MVP uses only the Python standard library.
+# Add parser dependencies only when a specific AST transformation is implemented.

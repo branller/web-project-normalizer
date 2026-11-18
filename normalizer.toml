@@ -1,0 +1,19 @@
+# Configuración de transformaciones explícitas.
+# Las rutas source son relativas al directorio indicado por --template
+# (por defecto, ./.template-cache/web-development-template).
+# Las rutas target son relativas al proyecto indicado con --target.
+#
+# Modos:
+# - create_only: crea el archivo solo si el destino no existe.
+# - replace: reemplaza el destino (si existe, primero crea backup).
+# - append: agrega el contenido al final, con marcadores para evitar duplicados.
+#
+# IMPORTANTE:
+# No habilites replace o append para globals.css hasta revisar cómo se integra
+# el CSS real de tu template con el proyecto objetivo.
+
+# Ejemplo:
+# [[files]]
+# source = "src/app/globals.css"
+# target = "src/app/globals.css"
+# mode = "create_only"

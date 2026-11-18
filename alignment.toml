@@ -1,0 +1,20 @@
+# Contrato de evaluación frente al web-development-template.
+# Los criterios no configurados no se incluyen en el porcentaje.
+# "*" o "present" exige presencia de dependencia sin fijar versión exacta.
+
+[stack.dependencies]
+# react = "*"
+# vite = "*"
+# tailwindcss = "*"
+
+[structure]
+paths = []
+# paths = ["client/src", "client/src/components"]
+
+[components]
+paths = []
+# paths = ["client/src/components/Button.tsx"]
+
+[design]
+tokens = []
+# tokens = ["color-primary", "radius-card", "font-sans"]
